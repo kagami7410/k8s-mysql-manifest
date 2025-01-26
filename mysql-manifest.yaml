@@ -86,7 +86,7 @@ spec:
           export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
 
           {{- end }}
-      labels
+      labels:
         app: mysql
     spec:
       serviceAccountName: mysql-sa
