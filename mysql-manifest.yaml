@@ -97,6 +97,9 @@ spec:
       containers:
       - name: mysql
         image: mysql:5.7.44
+        command: ["/bin/sh", "-c"]
+          args:
+            - source /vault/secrets/config && exec my-app-binary
         resources:
           requests:
             memory: "512Mi"
