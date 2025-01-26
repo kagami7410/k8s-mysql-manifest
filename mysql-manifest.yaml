@@ -71,21 +71,21 @@ spec:
     matchLabels:
       app: mysql
   template:
-    metadata:
-      annotations:
-        # Enable Vault Agent Injector
-        vault.hashicorp.com/agent-init-first: "true"
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "mysql-role"  # Vault role for the app
-        vault.hashicorp.com/agent-inject-secret-mysql_secret.txt: "kv/mysql/secrets" # Vault secret path
+    # metadata:
+    #   annotations:
+    #     # Enable Vault Agent Injector
+    #     vault.hashicorp.com/agent-init-first: "true"
+    #     vault.hashicorp.com/agent-inject: "true"
+    #     vault.hashicorp.com/role: "mysql-role"  # Vault role for the app
+    #     vault.hashicorp.com/agent-inject-secret-mysql_secret.txt: "kv/mysql/secrets" # Vault secret path
 
-        vault.hashicorp.com/agent-inject-template-mysql_secret.txt: |
-          {{- with secret "kv/mysql/secrets" -}}
-          export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
-          export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
-          export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
+    #     vault.hashicorp.com/agent-inject-template-mysql_secret.txt: |
+    #       {{- with secret "kv/mysql/secrets" -}}
+    #       export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
+    #       export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
+    #       export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
 
-          {{- end }}
+    #       {{- end }}
       labels:
         app: mysql
     spec:
@@ -105,8 +105,25 @@ spec:
             memory: "512Mi"
             cpu: "700m"
         env:
-        - name: REEF-FORGE-DATABASE
-          value: REEF-FORGE-DATABASE
+
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-root-pass
+              key: password
+
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-user-pass
+              key: username
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-user-pass
+              key: password
+        - name: MYSQL_DATABASE
+          value: reef-forge-database
                  
         volumeMounts:
         - name: mysql-pv
@@ -114,3 +131,26 @@ spec:
         ports:
         - containerPort: 3306
           name: mysql
+---
+
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-root-pass
+  namespace: mysql-operator
+type: Opaque
+data:
+  password: dmVyeVN0cm9uZ1Bhc3N3b3JkQDc0MTA=
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-user-pass
+  namespace: mysql-operator
+type: Opaque
+data:
+  username: dXNlcg==
+  password: cGFzc3dvcmRAMTIz
