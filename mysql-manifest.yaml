@@ -86,7 +86,7 @@ spec:
           export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
 
           {{- end }}
-      labels:
+      labels
         app: mysql
     spec:
       serviceAccountName: mysql-sa
@@ -97,9 +97,9 @@ spec:
       containers:
       - name: mysql
         image: mysql:5.7.44
-        command: ["/bin/sh", "-c"]
-        args:
-          -  "source /vault/secrets/mysql_secret.txt"
+        # command: ["/bin/sh", "-c"]
+        # args:
+        #   -  "source /vault/secrets/mysql_secret.txt"
         resources:
           requests:
             memory: "512Mi"
