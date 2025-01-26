@@ -1,14 +1,14 @@
 apiVersion: v1                                                                                
 kind: PersistentVolume                                                                        
 metadata:                                                                                     
-  name: mysql-pv                                                                              
+  name: mysql-server-pv                                                                              
 spec:                                                                                         
   capacity:                                                                                   
     storage: 5Gi     
   accessModes:                                                                                
     - ReadWriteOnce                                                                           
   local:
-    path: /mysql
+    path: /mysql-server
   nodeAffinity:
     required:
       nodeSelectorTerms:
