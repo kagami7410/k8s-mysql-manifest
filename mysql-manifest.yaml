@@ -1,0 +1,129 @@
+apiVersion: v1                                                                                
+kind: PersistentVolume                                                                        
+metadata:                                                                                     
+  name: mysql-pv                                                                              
+spec:                                                                                         
+  capacity:                                                                                   
+    storage: 5Gi     
+  accessModes:                                                                                
+    - ReadWriteOnce                                                                           
+  local:
+    path: /mysql
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - k8sworker1-virtual-machine                                                                   
+---                                                                                           
+apiVersion: v1                                                                                
+kind: PersistentVolumeClaim                                                                   
+metadata:                                                                                     
+  name: mysql-pv-claim  
+  namespace: mysql-operator                                                                      
+spec:                                                                                         
+  accessModes:                                                                                
+    - ReadWriteOnce                                                                           
+  resources:                                                                                  
+    requests:                                                                                 
+      storage: 5Gi        
+      
+      
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: mysql-operator                                                                      
+
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+      protocol: TCP
+
+
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mysql-sa
+  namespace: mysql-operator
+
+
+---	  
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  namespace: mysql-operator                                                                      
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      annotations:
+        # Enable Vault Agent Injector
+        vault.hashicorp.com/agent-init-first: "true"
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "mysql-role"  # Vault role for the app
+        vault.hashicorp.com/agent-inject-secret-mysql-secret: "kv/mysql/secrets" # Vault secret path
+
+        vault.hashicorp.com/agent-inject-template-mysql-secret: |
+          {{- with secret "kv/mysql/secrets" -}}
+          export MYSQL_PASSWORD="{{ .Data.data.MYSQL_PASSWORD }}"
+          export MYSQL_ROOT_PASSWORD="{{ .Data.data.MYSQL_ROOT_PASSWORD }}"
+          export MYSQL_USER="{{ .Data.data.MYSQL_USER }}"
+
+          {{- end }}
+      labels:
+        app: mysql
+    spec:
+      volumes:
+      - name: mysql-pv
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
+      containers:
+      - name: mysql
+        image: mysql:5.7.44
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "700m"
+        env:
+
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-root-pass
+              key: password
+
+        - name: MYSQL_USER
+          valueFrom :
+            secretKeyRef:
+              name: mysql-user-pass
+              key: username
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-user-pass
+              key: password
+        - name: MYSQL_DATABASE
+          value: leakdg_database
+                 
+        volumeMounts:
+        - name: mysql-pv
+          mountPath: /var/lib/mysql
+        ports:
+        - containerPort: 3306
+          name: mysql
