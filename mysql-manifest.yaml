@@ -100,7 +100,7 @@ spec:
         image: mysql:5.7.44
         command: ["/bin/sh", "-c"]
         args:
-          -  "exec /vault/secrets/mysql_secret.sh"
+          -  "./vault/secrets/mysql_secret.sh"
         resources:
           requests:
             memory: "512Mi"
